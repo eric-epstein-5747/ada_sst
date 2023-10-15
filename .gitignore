@@ -1,4 +1,5 @@
 .venv/*
+.vscode/*
 src/data/*
 src/mysecrets.py
 src/results/*
