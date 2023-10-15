@@ -7,7 +7,7 @@ if __name__ == "__main__":
     model = whisper.load_model("large")
 
     # load audio and pad/trim it to fit 30 seconds
-    audio = whisper.load_audio("./data/david_and_ada_side_1_short.wav")
+    audio = whisper.load_audio("./data/original_files/david_and_ada_side_1_short.wav")
     audio = whisper.pad_or_trim(audio)
 
     # make log-Mel spectrogram and move to the same device as the model
