@@ -5,6 +5,7 @@ import math
 import os
 import subprocess
 from typing import Tuple
+from tqdm import tqdm
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
@@ -60,8 +61,10 @@ def get_chunkdur_num_chunks(
 
 
 def main(filename):
+    print("Loading model")
     model = whisper.load_model("large")
 
+    print("Getting chunk duration & number of chunks")
     chunk_duration_s, num_chunks = get_chunkdur_num_chunks(filename)
 
     transcriptions = []
@@ -72,7 +75,8 @@ def main(filename):
     # Get the file extension from the filename
     file_extension = os.path.splitext(filename)[1]
 
-    for i in range(num_chunks):
+    print("Using ffmpeg to extract & transcribe each chunk...")
+    for i in tqdm(range(num_chunks)):
         start_s = i * (chunk_duration_s - overlap_seconds)
         end_s = start_s + chunk_duration_s
 
@@ -109,6 +113,7 @@ def main(filename):
         transcriptions.append(transcription)
 
     # Save transcriptions to a file
+    print("Saving transcriptions to ./results/non_diarized/transcriptions.txt")
     os.makedirs("./results/non_diarized/", exist_ok=True)
     with open("./results/non_diarized/transcriptions.txt", "w") as file:
         for idx, transcription in enumerate(transcriptions):
@@ -122,7 +127,7 @@ def parse_argv() -> argparse.Namespace:
     parser.add_argument(
         "--input_audio_file",
         required=False,
-        default="./data/david_and_ada_side_1_short.wav",
+        default="./data/original_files/david_and_ada_side_1_short.wav",
         type=str,
     )
     return parser.parse_args()

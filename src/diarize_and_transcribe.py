@@ -6,6 +6,7 @@ import torch
 import re
 import os
 import json
+from tqdm import tqdm
 from mysecrets import hf_token
 
 speakers = {
@@ -70,7 +71,8 @@ def group_and_save(
 
 def transcribe_split_groups(groups, model) -> None:
     os.makedirs("./data/diarization/split_files/transcriptions/", exist_ok=True)
-    for i in range(len(groups)):
+    for i in tqdm(range(len(groups))):
+        print(f"transcribing group {i}")
         audiof = "./data/diarization/split_files/audio/" + str(i) + ".wav"
         result = model.transcribe(audio=audiof, language="en", word_timestamps=True)
         with open(
@@ -111,6 +113,7 @@ def transcibe_all(groups, speakers):
                     f'[{timeStr(start)} --> {timeStr(end)}] [{speaker}] {c["text"]}\n'
                 )
 
+    os.makedirs("./results/diarization/", exist_ok=True)
     with open(f"./results/diarization/captions.txt", "w", encoding="utf-8") as file:
         s = "".join(txt)
         file.write(s)
