@@ -73,6 +73,7 @@ def main(filename):
     os.makedirs(output_folder, exist_ok=True)
 
     # Get the file extension from the filename
+    qualitative_name = os.path.splitext(filename)[0]
     file_extension = os.path.splitext(filename)[1]
 
     print("Using ffmpeg to extract & transcribe each chunk...")
@@ -113,9 +114,13 @@ def main(filename):
         transcriptions.append(transcription)
 
     # Save transcriptions to a file
-    print("Saving transcriptions to ./results/non_diarized/transcriptions.txt")
+    print(
+        f"Saving transcriptions to ./results/non_diarized/transcriptions_{qualitative_name}.txt"
+    )
     os.makedirs("./results/non_diarized/", exist_ok=True)
-    with open("./results/non_diarized/transcriptions.txt", "w") as file:
+    with open(
+        f"./results/non_diarized/transcriptions_{qualitative_name}.txt", "w"
+    ) as file:
         for idx, transcription in enumerate(transcriptions):
             file.write(f"Chunk {idx + 1}:\n{transcription}\n\n")
 
