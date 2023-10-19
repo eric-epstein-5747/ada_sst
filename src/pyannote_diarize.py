@@ -1,3 +1,4 @@
+import argparse
 from pyannote.audio import Pipeline
 from pydub import AudioSegment
 import torch
@@ -53,13 +54,27 @@ def group_and_save(
     return
 
 
+def parse_argv() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--input_audio_file",
+        required=False,
+        default="./data/original_files/david_and_ada_side_1_short.wav",
+        type=str,
+    )
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
+    args = parse_argv()
+
     print("Prepending silence to input audio")
     spacermilli = 2000
     spacer = AudioSegment.silent(duration=spacermilli)
-    audio = AudioSegment.from_wav("./data/david_and_ada_side_1_short.wav")
+    audio = AudioSegment.from_wav(args.input_audio_file)
     audio = spacer.append(audio, crossfade=0)
-    audio.export("./data/david_and_ada_side_1_short_prep.wav", format="wav")
+    prepared_audio_filepath = args.input_audio_file.replace(".wav", "_prep.wav")
+    audio.export(prepared_audio_filepath, format="wav")
 
     pipeline = Pipeline.from_pretrained(
         "pyannote/speaker-diarization-3.0",
@@ -72,7 +87,7 @@ if __name__ == "__main__":
 
     # apply pretrained pipeline
     print("Now applying pretrained pipeline to input audio")
-    diarization = pipeline("./data/david_and_ada_side_1_short_prep.wav")
+    diarization = pipeline(prepared_audio_filepath)
 
     print("Writing diarization file")
     with open("diarization.txt", "w") as text_file:
@@ -84,5 +99,5 @@ if __name__ == "__main__":
     print("Splitting audio based on diarization file")
     group_and_save(
         diarization_file="diarization.txt",
-        prepended_input_file="./data/david_and_ada_side_1_short_prep.wav",
+        prepended_input_file=prepared_audio_filepath,
     )
