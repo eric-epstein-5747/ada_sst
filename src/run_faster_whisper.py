@@ -14,7 +14,7 @@ ssl._create_default_https_context = ssl._create_unverified_context
 
 # Constants
 max_bytes = 26214400  # From Whisper error message
-overlap_seconds = 5
+overlap_seconds = 0
 
 
 def get_chunkdur_num_chunks(
@@ -45,7 +45,7 @@ def get_chunkdur_num_chunks(
     return chunk_duration_s, num_chunks
 
 
-def main(filename):
+def main(filename: str, qualitative_name: str):
     print("Loading model")
     # run on CPU with INT8
     model = WhisperModel(model_size, device="cpu", compute_type="int8")
@@ -57,7 +57,6 @@ def main(filename):
     os.makedirs(output_folder, exist_ok=True)
 
     # Get the file extension from the filename
-    qualitative_name = os.path.splitext(filename)[0]
     file_extension = os.path.splitext(filename)[1]
 
     # initialize dict for storing word timestamps
@@ -102,11 +101,13 @@ def main(filename):
                 word_dict["word_end"].append(start_s + word.end)
 
     # Save transcriptions to a file
-    print(f"Saving transcriptions to ./results/non_diarized/transcriptions.csv")
-    os.makedirs("./results/non_diarized/", exist_ok=True)
+    print(
+        f"Saving transcriptions to ./results/non_diarized_transcriptions/{qualitative_name}_transcriptions.csv"
+    )
+    os.makedirs("./results/non_diarized_transcriptions/", exist_ok=True)
     df = pd.DataFrame(word_dict)
     df.to_csv(
-        f"./results/non_diarized/transcriptions.csv",
+        f"./results/non_diarized_transcriptions/{qualitative_name}_transcriptions.csv",
         header=True,
         index=False,
     )
@@ -120,6 +121,14 @@ def parse_argv() -> argparse.Namespace:
         required=False,
         default="./data/original_files/david_and_ada_side_1_short.wav",
         type=str,
+        help="Path to .wav file of the audio you want to transcribe",
+    )
+    parser.add_argument(
+        "--qualitative_name",
+        required=False,
+        default="david_and_ada_side_1_short",
+        type=str,
+        help="Qualitative description of your intended output file (no spaces, dots, or capital letters!)",
     )
     return parser.parse_args()
 
@@ -127,6 +136,7 @@ def parse_argv() -> argparse.Namespace:
 if __name__ == "__main__":
     args = parse_argv()
 
-    filename = args.input_audio_file
-
-    main(filename)
+    main(
+        filename=args.input_audio_file,
+        qualitative_name=args.qualitative_name,
+    )

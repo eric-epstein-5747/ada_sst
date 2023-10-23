@@ -4,10 +4,11 @@ import re
 import os
 
 SPEAKER_MAPPING = {
-    None: "UNKNOWN",
     "SPEAKER_00": "RACHEL",
     "SPEAKER_01": "ADA",
     "SPEAKER_02": "DAVID",
+    "SPEAKER_03": "DAVID",
+    "SPEAKER_04": "ADA",
 }
 
 
@@ -49,7 +50,7 @@ def get_dialogue(
             raw_speaker = filtered.iloc[0]["speaker"]
         else:
             raw_speaker = None
-        speakers.append(SPEAKER_MAPPING[raw_speaker])
+        speakers.append(SPEAKER_MAPPING.get(raw_speaker, "UNKNOWN"))
 
     transcription["speaker"] = speakers
 

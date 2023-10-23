@@ -61,6 +61,24 @@ def parse_argv() -> argparse.Namespace:
         required=False,
         default="./data/original_files/david_and_ada_side_1_short.wav",
         type=str,
+        help="Path to .wav file of the audio you want to transcribe",
+    )
+    parser.add_argument(
+        "--qualitative_name",
+        required=False,
+        default="david_and_ada_side_1_short",
+        type=str,
+        help="Qualitative description of your intended output file (no spaces, dots, or capital letters!)",
+    )
+    parser.add_argument(
+        "--dont_diarize",
+        action="store_true",
+        help="Option not to diarize if this has been done already. Default is False, i.e., *do* diarize!",
+    )
+    parser.add_argument(
+        "--dont_split_audio",
+        action="store_true",
+        help="Whether or not to split audio. Requires that a diarization file exist! Default is false--i.e., *do* split audio!",
     )
     return parser.parse_args()
 
@@ -68,36 +86,41 @@ def parse_argv() -> argparse.Namespace:
 if __name__ == "__main__":
     args = parse_argv()
 
-    print("Prepending silence to input audio")
-    spacermilli = 2000
-    spacer = AudioSegment.silent(duration=spacermilli)
-    audio = AudioSegment.from_wav(args.input_audio_file)
-    audio = spacer.append(audio, crossfade=0)
-    prepared_audio_filepath = args.input_audio_file.replace(".wav", "_prep.wav")
-    audio.export(prepared_audio_filepath, format="wav")
+    os.makedirs("./results/diarization", exist_ok=True)
+    diarization_file = f"./results/diarization/{args.qualitative_name}_diarization.txt"
+    
+    if not args.dont_diarize:
+        print("Prepending silence to input audio")
+        spacermilli = 2000
+        spacer = AudioSegment.silent(duration=spacermilli)
+        audio = AudioSegment.from_wav(args.input_audio_file)
+        audio = spacer.append(audio, crossfade=0)
+        prepared_audio_filepath = args.input_audio_file.replace(".wav", "_prep.wav")
+        audio.export(prepared_audio_filepath, format="wav")
 
-    pipeline = Pipeline.from_pretrained(
-        "pyannote/speaker-diarization-3.0",
-        use_auth_token=hf_token,
-    )
+        pipeline = Pipeline.from_pretrained(
+            "pyannote/speaker-diarization-3.0",
+            use_auth_token=hf_token,
+        )
 
-    # send pipeline to GPU (when available)
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    pipeline.to(device)
+        # send pipeline to GPU (when available)
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        pipeline.to(device)
+        
+        # apply pretrained pipeline
+        print("Now applying pretrained pipeline to input audio")
+        diarization = pipeline(prepared_audio_filepath)
 
-    # apply pretrained pipeline
-    print("Now applying pretrained pipeline to input audio")
-    diarization = pipeline(prepared_audio_filepath)
+        print("Writing diarization file")
+        with open(diarization_file, "w") as text_file:
+            text_file.write(str(diarization))
+        # # print the result
+        # for turn, _, speaker in diarization.itertracks(yield_label=True):
+        #     print(f"start={turn.start:.1f}s stop={turn.end:.1f}s speaker_{speaker}")
 
-    print("Writing diarization file")
-    with open("diarization.txt", "w") as text_file:
-        text_file.write(str(diarization))
-    # # print the result
-    # for turn, _, speaker in diarization.itertracks(yield_label=True):
-    #     print(f"start={turn.start:.1f}s stop={turn.end:.1f}s speaker_{speaker}")
-
-    print("Splitting audio based on diarization file")
-    group_and_save(
-        diarization_file="diarization.txt",
-        prepended_input_file=prepared_audio_filepath,
-    )
+    if not args.dont_split_audio:
+        print("Splitting audio based on diarization file")
+        group_and_save(
+            diarization_file=diarization_file,
+            prepended_input_file=prepared_audio_filepath,
+        )
