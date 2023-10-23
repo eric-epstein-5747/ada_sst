@@ -80,6 +80,13 @@ def parse_argv() -> argparse.Namespace:
         action="store_true",
         help="Whether or not to split audio. Requires that a diarization file exist! Default is false--i.e., *do* split audio!",
     )
+    parser.add_argument(
+        "--num_speakers",
+        type=int,
+        default=None,
+        required=False,
+        help="Number of speakers in audio file. Default is None for unknown",
+    )
     return parser.parse_args()
 
 
@@ -88,7 +95,7 @@ if __name__ == "__main__":
 
     os.makedirs("./results/diarization", exist_ok=True)
     diarization_file = f"./results/diarization/{args.qualitative_name}_diarization.txt"
-    
+
     if not args.dont_diarize:
         print("Prepending silence to input audio")
         spacermilli = 2000
@@ -106,10 +113,10 @@ if __name__ == "__main__":
         # send pipeline to GPU (when available)
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         pipeline.to(device)
-        
+
         # apply pretrained pipeline
         print("Now applying pretrained pipeline to input audio")
-        diarization = pipeline(prepared_audio_filepath)
+        diarization = pipeline(prepared_audio_filepath, num_speakers=args.num_speakers)
 
         print("Writing diarization file")
         with open(diarization_file, "w") as text_file:
